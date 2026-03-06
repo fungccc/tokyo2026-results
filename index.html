@@ -19,7 +19,7 @@
 <body>
     <div class="container-fluid container-box">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="m-0" data-i18n="title">🏃‍♂️ 東京馬拉松 2026 成績(快閃至3月20日前)查詢</h2>
+            <h2 class="m-0" data-i18n="title">🏃‍♂️ 東京馬拉松 2026 非官方成績查詢系統</h2>
             <div class="btn-group" role="group">
                 <input type="radio" class="btn-check" name="langSwitch" id="lang-zh" value="zh" checked>
                 <label class="btn btn-outline-secondary btn-sm" for="lang-zh">中</label>
@@ -52,7 +52,9 @@
             <p class="mt-2" data-i18n="loading">成績資料載入中，請稍候...</p>
         </div>
 
-        <table id="resultsTable" class="table table-striped table-hover w-100" style="display:none;"></table>
+        <div id="tableContainer" style="display:none; width: 100%;">
+            <table id="resultsTable" class="table table-striped table-hover w-100"></table>
+        </div>
 
         <div class="footer-sponsor">
             <p><span data-i18n="sponsor">系統開發與維護：</span><a href="https://www.buymeacoffee.com/fstudio" target="_blank">FStudio ☕</a></p>
@@ -87,17 +89,21 @@
                 title: "🏃‍♂️ 東京馬拉松 2026 成績查詢", lblNatl: "🌍 地區 (Natl)：", lblGender: "🚻 性別 (Gender)：", lblBib: "🔢 號碼布 (Bib)：", lblName: "👤 姓名 (Name)：",
                 showAll: "顯示全部", phBib: "輸入號碼精確搜尋...", phName: "例如：WONG", loading: "成績資料載入中，請稍候...", sponsor: "系統開發與維護：",
                 mTotal: "全部", mPeople: "人", mFemale: "女", mMale: "男", 
-                mRankNet: "總名次:(net time):", mRankGun: "性別名次(官方_鳴槍排名):", mRankNGNet: "區域+性別名次(net time):", mRankNNet: "區域名次(net time):",
+                mRankNet: "總名次 (net time):", mRankGun: "性別名次 (官方_鳴槍排名):", mRankNGNet: "區域+性別名次 (net time):", mRankNNet: "區域名次 (net time):",
                 btnDownload: "📸 下載成績圖",
-                dtEmpty: "表中資料為空", dtInfo: "顯示第 _START_ 至 _END_ 項結果，共 _TOTAL_ 項", dtInfoEmpty: "顯示 0 項結果", dtLen: "顯示 _MENU_ 項", dtZero: "沒有符合的結果"
+                dtEmpty: "表中資料為空", dtInfo: "顯示第 _START_ 至 _END_ 項結果，共 _TOTAL_ 項", dtInfoEmpty: "顯示 0 項結果", dtLen: "顯示 _MENU_ 項", dtZero: "沒有符合的結果",
+                // CSV 標題翻譯 (中文版)
+                col_Overall_Rank_Net: "總名次(Net)", col_Gender: "性別", col_Gender_Rank_Gun: "性別名次(Gun)", col_Natl: "地區", col_Natl_Gender_Rank_Net: "區/性名次", col_Natl_Rank_Net: "區域名次", col_Bib: "號碼布", col_Name: "姓名", col_Net_Time: "晶片時間", col_Gross_Time: "大會時間"
             },
             en: {
                 title: "🏃‍♂️ Tokyo Marathon 2026 Results", lblNatl: "🌍 Natl:", lblGender: "🚻 Gender:", lblBib: "🔢 Bib:", lblName: "👤 Name:",
                 showAll: "All", phBib: "Exact search...", phName: "e.g., WONG", loading: "Loading data...", sponsor: "Developed by: ",
                 mTotal: "Total ", mPeople: "", mFemale: "F", mMale: "M", 
-                mRankNet: "Overall Rank(net):", mRankGun: "Gender Rank(gun):", mRankNGNet: "Natl+Gender Rank(net):", mRankNNet: "Natl Rank(net):",
+                mRankNet: "Overall Rank (net):", mRankGun: "Gender Rank (gun):", mRankNGNet: "Natl+Gender Rank (net):", mRankNNet: "Natl Rank (net):",
                 btnDownload: "📸 Download Image",
-                dtEmpty: "No data available", dtInfo: "Showing _START_ to _END_ of _TOTAL_ entries", dtInfoEmpty: "Showing 0 entries", dtLen: "Show _MENU_ entries", dtZero: "No matching records found"
+                dtEmpty: "No data available", dtInfo: "Showing _START_ to _END_ of _TOTAL_ entries", dtInfoEmpty: "Showing 0 entries", dtLen: "Show _MENU_ entries", dtZero: "No matching records found",
+                // CSV 標題翻譯 (英文版直接對應原始欄位)
+                col_Overall_Rank_Net: "Overall_Rank_Net", col_Gender: "Gender", col_Gender_Rank_Gun: "Gender_Rank_Gun", col_Natl: "Natl", col_Natl_Gender_Rank_Net: "Natl_Gender_Rank_Net", col_Natl_Rank_Net: "Natl_Rank_Net", col_Bib: "Bib", col_Name: "Name", col_Net_Time: "Net_Time", col_Gross_Time: "Gross_Time"
             }
         };
 
@@ -117,8 +123,25 @@
         function initTable() {
             if (dtInstance) {
                 dtInstance.destroy();
-                $('#resultsTable').empty(); // 必須清空 DOM，防止殘留舊的表頭
+                $('#resultsTable').empty(); 
             }
+            
+            // 強制生成 thead 避免 Bootstrap/DataTables 錯亂
+            $('#resultsTable').html('<thead><tr></tr></thead><tbody></tbody>');
+
+            // 依據語系設定表頭名稱
+            globalColumns = Object.keys(globalData[0]).map(key => {
+                let dictKey = 'col_' + key;
+                let titleStr = dict[currentLang][dictKey] || key;
+                let colDef = { title: titleStr, data: key, name: key };
+                if (key === 'Name') {
+                    colDef.render = function(val, type) {
+                        return type === 'display' ? `<span class="runner-link fw-bold">${val}</span>` : val;
+                    };
+                }
+                return colDef;
+            });
+
             dtInstance = $('#resultsTable').DataTable({
                 data: globalData,
                 columns: globalColumns,
@@ -132,7 +155,7 @@
                 }
             });
             
-            // 重新綁定搜尋狀態 (確保重建表格後搜尋功能仍然有效)
+            // 恢復當下的篩選條件
             dtInstance.column('Natl:name').search($('#filter-natl').val()).draw(false);
             dtInstance.column('Gender:name').search($('#filter-gender').val()).draw(false);
             dtInstance.column('Bib:name').search($('#filter-bib').val()).draw(false);
@@ -146,14 +169,14 @@
                 currentLang = $(this).val();
                 updateUI();
                 if(globalData.length > 0) {
-                    $('#resultsTable_wrapper').hide(); // 隱藏舊表格
-                    $('#loading').show(); // 顯示讀取中
+                    $('#tableContainer').hide(); 
+                    $('#loading').show(); 
                     
-                    // 利用 setTimeout 讓瀏覽器有時間先渲染 UI，避免卡死
+                    // 用 setTimeout 讓瀏覽器先繪製 Loading 畫面
                     setTimeout(function() {
-                        initTable();
                         $('#loading').hide();
-                        $('#resultsTable_wrapper').show();
+                        $('#tableContainer').show(); // ✅ 必須在 initTable() 之前顯示
+                        initTable();
                     }, 100);
                 }
             });
@@ -179,19 +202,10 @@
                         }
                     });
 
-                    globalColumns = Object.keys(globalData[0]).map(key => {
-                        let colDef = { title: key, data: key, name: key };
-                        if (key === 'Name') {
-                            colDef.render = function(val, type) {
-                                return type === 'display' ? `<span class="runner-link fw-bold">${val}</span>` : val;
-                            };
-                        }
-                        return colDef;
-                    });
-
-                    initTable(); // 初始化表格
+                    // 初次載入
                     $('#loading').hide();
-                    $('#resultsTable').show();
+                    $('#tableContainer').show(); // ✅ 必須在 initTable() 之前顯示
+                    initTable(); 
 
                     const natlSet = new Set(), genderSet = new Set();
                     globalData.forEach(row => { 
