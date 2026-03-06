@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>東京馬拉松 2026 成績查詢系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; background-color: #f8f9fa; }
+        .container-box { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .filter-section { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .footer-sponsor { text-align: center; margin-top: 30px; font-size: 0.9em; color: #6c757d; }
+        .footer-sponsor a { text-decoration: none; font-weight: bold; color: #ff813f; }
+        .runner-link { cursor: pointer; color: #0d6efd; text-decoration: underline; }
+        .modal-body p { margin-bottom: 0.2rem; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid container-box">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="m-0" data-i18n="title">🏃‍♂️ 東京馬拉松 2026 成績(快閃至3月20日前)查詢</h2>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="langSwitch" id="lang-zh" value="zh" checked>
+                <label class="btn btn-outline-secondary btn-sm" for="lang-zh">中</label>
+                <input type="radio" class="btn-check" name="langSwitch" id="lang-en" value="en">
+                <label class="btn btn-outline-secondary btn-sm" for="lang-en">ENG</label>
+            </div>
+        </div>
+
+        <div class="filter-section row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold" data-i18n="lblNatl">🌍 地區 (Natl)：</label>
+                <select id="filter-natl" class="form-select"><option value="" data-i18n="showAll">顯示全部</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold" data-i18n="lblGender">🚻 性別 (Gender)：</label>
+                <select id="filter-gender" class="form-select"><option value="" data-i18n="showAll">顯示全部</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold" data-i18n="lblBib">🔢 號碼布 (Bib)：</label>
+                <input type="text" id="filter-bib" class="form-control" data-i18n-ph="phBib" placeholder="輸入號碼精確搜尋...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold" data-i18n="lblName">👤 姓名 (Name)：</label>
+                <input type="text" id="filter-name" class="form-control" data-i18n-ph="phName" placeholder="例如：WONG">
+            </div>
+        </div>
+
+        <div id="loading" class="text-center my-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2" data-i18n="loading">成績資料載入中，請稍候...</p>
+        </div>
+
+        <table id="resultsTable" class="table table-striped table-hover w-100" style="display:none;"></table>
+
+        <div class="footer-sponsor">
+            <p><span data-i18n="sponsor">系統開發與維護：</span><a href="https://www.buymeacoffee.com/fstudio" target="_blank">FStudio ☕</a></p>
+        </div>
+    </div>
+
+    <div class="modal fade" id="runnerModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content" id="captureArea">
+          <div class="modal-header bg-light">
+            <h5 class="modal-title fw-bold" id="modalName">Name</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="modalCloseBtn"></button>
+          </div>
+          <div class="modal-body" id="modalContent" style="font-size: 0.95em;"></div>
+          <div class="modal-footer" id="modalFooterBtns">
+            <button type="button" class="btn btn-primary btn-sm w-100" id="btnDownloadImg" data-i18n="btnDownload">📸 下載成績圖</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        const dict = {
+            zh: {
+                title: "🏃‍♂️ 東京馬拉松 2026 成績查詢", lblNatl: "🌍 地區 (Natl)：", lblGender: "🚻 性別 (Gender)：", lblBib: "🔢 號碼布 (Bib)：", lblName: "👤 姓名 (Name)：",
+                showAll: "顯示全部", phBib: "輸入號碼精確搜尋...", phName: "例如：WONG", loading: "成績資料載入中，請稍候...", sponsor: "系統開發與維護：",
+                mTotal: "全部", mPeople: "人", mFemale: "女", mMale: "男", 
+                mRankNet: "總名次:(net time):", mRankGun: "性別名次(官方_鳴槍排名):", mRankNGNet: "區域+性別名次(net time):", mRankNNet: "區域名次(net time):",
+                btnDownload: "📸 下載成績圖",
+                dtEmpty: "表中資料為空", dtInfo: "顯示第 _START_ 至 _END_ 項結果，共 _TOTAL_ 項", dtInfoEmpty: "顯示 0 項結果", dtLen: "顯示 _MENU_ 項", dtZero: "沒有符合的結果"
+            },
+            en: {
+                title: "🏃‍♂️ Tokyo Marathon 2026 Results", lblNatl: "🌍 Natl:", lblGender: "🚻 Gender:", lblBib: "🔢 Bib:", lblName: "👤 Name:",
+                showAll: "All", phBib: "Exact search...", phName: "e.g., WONG", loading: "Loading data...", sponsor: "Developed by: ",
+                mTotal: "Total ", mPeople: "", mFemale: "F", mMale: "M", 
+                mRankNet: "Overall Rank(net):", mRankGun: "Gender Rank(gun):", mRankNGNet: "Natl+Gender Rank(net):", mRankNNet: "Natl Rank(net):",
+                btnDownload: "📸 Download Image",
+                dtEmpty: "No data available", dtInfo: "Showing _START_ to _END_ of _TOTAL_ entries", dtInfoEmpty: "Showing 0 entries", dtLen: "Show _MENU_ entries", dtZero: "No matching records found"
+            }
+        };
+
+        let currentLang = 'zh';
+        let dtInstance = null;
+        let globalData = [];
+        let globalStats = null;
+        let globalColumns = [];
+
+        function updateUI() {
+            $('[data-i18n]').each(function() { $(this).text(dict[currentLang][$(this).data('i18n')]); });
+            $('[data-i18n-ph]').each(function() { $(this).attr('placeholder', dict[currentLang][$(this).data('i18n-ph')]); });
+            $('#filter-natl option:first-child').text(dict[currentLang].showAll);
+            $('#filter-gender option:first-child').text(dict[currentLang].showAll);
+        }
+
+        function initTable() {
+            if (dtInstance) {
+                dtInstance.destroy();
+                $('#resultsTable').empty(); // 必須清空 DOM，防止殘留舊的表頭
+            }
+            dtInstance = $('#resultsTable').DataTable({
+                data: globalData,
+                columns: globalColumns,
+                pageLength: 50,
+                scrollX: true,
+                order: [], 
+                dom: '<"top"i>rt<"bottom"flp><"clear">',
+                language: {
+                    emptyTable: dict[currentLang].dtEmpty, info: dict[currentLang].dtInfo, infoEmpty: dict[currentLang].dtInfoEmpty,
+                    lengthMenu: dict[currentLang].dtLen, zeroRecords: dict[currentLang].dtZero
+                }
+            });
+            
+            // 重新綁定搜尋狀態 (確保重建表格後搜尋功能仍然有效)
+            dtInstance.column('Natl:name').search($('#filter-natl').val()).draw(false);
+            dtInstance.column('Gender:name').search($('#filter-gender').val()).draw(false);
+            dtInstance.column('Bib:name').search($('#filter-bib').val()).draw(false);
+            dtInstance.column('Name:name').search($('#filter-name').val(), true, false).draw(false);
+        }
+
+        $(document).ready(function() {
+            updateUI();
+
+            $('input[name="langSwitch"]').on('change', function() {
+                currentLang = $(this).val();
+                updateUI();
+                if(globalData.length > 0) {
+                    $('#resultsTable_wrapper').hide(); // 隱藏舊表格
+                    $('#loading').show(); // 顯示讀取中
+                    
+                    // 利用 setTimeout 讓瀏覽器有時間先渲染 UI，避免卡死
+                    setTimeout(function() {
+                        initTable();
+                        $('#loading').hide();
+                        $('#resultsTable_wrapper').show();
+                    }, 100);
+                }
+            });
+
+            Papa.parse("tokyo2026_results_final.csv", {
+                download: true, header: true, skipEmptyLines: true,
+                complete: function(results) {
+                    globalData = results.data;
+                    if(globalData.length === 0) {
+                        $('#loading').html('<p class="text-danger">找不到資料。</p>');
+                        return;
+                    }
+
+                    globalStats = { total: globalData.length, female: 0, male: 0, natl: {} };
+                    globalData.forEach(row => {
+                        const g = (row['Gender'] || '').trim();
+                        const n = (row['Natl'] || '').trim();
+                        if(g === '女子') globalStats.female++; else if(g === '男子') globalStats.male++;
+                        if(n) {
+                            if(!globalStats.natl[n]) globalStats.natl[n] = { total: 0, female: 0, male: 0 };
+                            globalStats.natl[n].total++;
+                            if(g === '女子') globalStats.natl[n].female++; else if(g === '男子') globalStats.natl[n].male++;
+                        }
+                    });
+
+                    globalColumns = Object.keys(globalData[0]).map(key => {
+                        let colDef = { title: key, data: key, name: key };
+                        if (key === 'Name') {
+                            colDef.render = function(val, type) {
+                                return type === 'display' ? `<span class="runner-link fw-bold">${val}</span>` : val;
+                            };
+                        }
+                        return colDef;
+                    });
+
+                    initTable(); // 初始化表格
+                    $('#loading').hide();
+                    $('#resultsTable').show();
+
+                    const natlSet = new Set(), genderSet = new Set();
+                    globalData.forEach(row => { 
+                        if(row['Natl']) natlSet.add(row['Natl'].trim()); 
+                        if(row['Gender']) genderSet.add(row['Gender'].trim()); 
+                    });
+                    Array.from(natlSet).sort().forEach(val => $('#filter-natl').append(`<option value="${val}">${val}</option>`));
+                    Array.from(genderSet).sort().forEach(val => $('#filter-gender').append(`<option value="${val}">${val}</option>`));
+
+                    $('#filter-natl').on('change', function() { dtInstance.column('Natl:name').search(this.value).draw(); });
+                    $('#filter-gender').on('change', function() { dtInstance.column('Gender:name').search(this.value).draw(); });
+                    $('#filter-bib').on('keyup', function() { dtInstance.column('Bib:name').search(this.value).draw(); });
+                    $('#filter-name').on('keyup', function() { dtInstance.column('Name:name').search(this.value, true, false).draw(); });
+
+                    $('#resultsTable').on('click', '.runner-link', function() {
+                        let row = dtInstance.row($(this).closest('tr')).data();
+                        let g = (row['Gender'] || '').trim();
+                        let n = (row['Natl'] || '').trim();
+                        let nStats = globalStats.natl[n] || { total: 0, female: 0, male: 0 };
+                        let genderTotal = g === '女子' ? globalStats.female : globalStats.male;
+                        let natlGenderTotal = g === '女子' ? nStats.female : nStats.male;
+                        
+                        let d = dict[currentLang];
+
+                        let modalHtml = `
+                            <div class="mb-3 text-secondary border-bottom pb-2">
+                                <p>${d.mTotal}${globalStats.total}${d.mPeople}(${d.mFemale}${globalStats.female}${d.mPeople}, ${d.mMale}${globalStats.male}${d.mPeople})</p>
+                                <p>${n} ${nStats.total}${d.mPeople}(${d.mFemale}${nStats.female}${d.mPeople}, ${d.mMale}${nStats.male}${d.mPeople})</p>
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-primary fs-6">${g} ${n} : bib ${row['Bib']}</span>
+                            </div>
+                            <p><strong>${d.mRankNet}</strong> ${row['Overall_Rank_Net']}/${globalStats.total}</p>
+                            <p><strong>${d.mRankGun}</strong> ${row['Gender_Rank_Gun']}/${genderTotal}</p>
+                            <p><strong>${d.mRankNGNet}</strong> ${row['Natl_Gender_Rank_Net']}/${natlGenderTotal}</p>
+                            <p><strong>${d.mRankNNet}</strong> ${row['Natl_Rank_Net']}/${nStats.total}</p>
+                        `;
+                        $('#modalName').text(row['Name']);
+                        $('#modalContent').html(modalHtml);
+                        new bootstrap.Modal(document.getElementById('runnerModal')).show();
+                    });
+                }
+            });
+
+            $('#btnDownloadImg').on('click', function() {
+                const targetArea = document.getElementById('captureArea');
+                const closeBtn = document.getElementById('modalCloseBtn');
+                const footerBtns = document.getElementById('modalFooterBtns');
+                
+                closeBtn.style.display = 'none';
+                footerBtns.style.display = 'none';
+
+                html2canvas(targetArea, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
+                    closeBtn.style.display = '';
+                    footerBtns.style.display = '';
+                    
+                    let link = document.createElement('a');
+                    let runnerName = $('#modalName').text().trim().replace(/\s+/g, '_');
+                    link.download = `Tokyo2026_${runnerName}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
