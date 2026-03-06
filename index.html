@@ -264,5 +264,27 @@
             });
         });
     </script>
+    <script type="module">
+        // 改為載入 CDN 版本的 Firebase 模組
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+
+        // 你的專屬 Firebase 設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyArXbvUxQGW4w0dFW5O2gLYsmTXzFu09cc",
+            authDomain: "tokyomarathon2026result.firebaseapp.com",
+            projectId: "tokyomarathon2026result",
+            storageBucket: "tokyomarathon2026result.firebasestorage.app",
+            messagingSenderId: "406690127914",
+            appId: "1:406690127914:web:9ff46da29d7a092b386353",
+            measurementId: "G-PJ1KWYM70F"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        console.log("Firebase Analytics 已啟動，開始追蹤流量");
+    </script>
 </body>
 </html>
+
