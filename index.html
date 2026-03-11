@@ -6,6 +6,7 @@
     <title>東京馬拉松 2026 非官方成績查詢系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.bootstrap5.min.css" rel="stylesheet">
     <style>
         body { padding: 20px; background-color: #f8f9fa; }
         .container-box { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -14,6 +15,12 @@
         .footer-sponsor a { text-decoration: none; font-weight: bold; color: #ff813f; }
         .runner-link { cursor: pointer; color: #0d6efd; text-decoration: underline; }
         
+        /* 新增：確保固定表頭的背景不會透明重疊 */
+        table.dataTable thead th {
+            background-color: #e9ecef !important;
+            z-index: 10;
+        }
+
         #captureArea {
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             color: #ffffff;
@@ -87,7 +94,7 @@
             align-items: flex-start;
             gap: 4px;
             line-height: 1.2;
-            word-break: keep-all; /* 避免中日文破字與英文過度換行 */
+            word-break: keep-all;
         }
         
         .cert-stat-value {
@@ -190,6 +197,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -246,7 +254,6 @@
             $('#filter-natl option:first-child').text(dict[currentLang].showAll);
             $('#filter-gender option:first-child').text(dict[currentLang].showAll);
             
-            // 動態更新卡片最上方的賽事大標題
             $('.cert-event-title').text(dict[currentLang].eventTitle);
             
             if (currentLang === 'en') {
@@ -319,6 +326,7 @@
                 columns: globalColumns,
                 pageLength: 50,
                 scrollX: true,
+                fixedHeader: true, /* 新增：啟用滑鼠往下捲動時固定表頭 */
                 order: [[0, 'asc']], 
                 dom: '<"top"i>rt<"bottom"flp><"clear">',
                 language: {
@@ -433,7 +441,6 @@
 
                         $('#modalBibTag').text(`${displayG} ${displayN} : Bib ${row['Bib']}`);
                         
-                        // 注意這裡：字體縮小到 0.75em，行距 1.4，讓資料顯示更整齊不斷行
                         let modalHtml = `
                             <div class="cert-stats-grid mb-3">
                                 <div class="cert-stat-card">
