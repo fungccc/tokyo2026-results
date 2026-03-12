@@ -12,6 +12,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
     <style>
         body { padding: 20px; background-color: #f8f9fa; }
         .container-box { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -20,24 +21,18 @@
         .footer-sponsor a { text-decoration: none; font-weight: bold; color: #ff813f; }
         .runner-link { cursor: pointer; color: #0d6efd; text-decoration: underline; }
         
-        /* ==============================================
-           ★ 終極解法：CSS 原生 Sticky 固定表頭，永不跑位
-           ============================================== */
+        /* 避免語言切換按鈕文字折行 */
+        .btn-group label { white-space: nowrap; }
+
+        /* CSS 原生 Sticky 固定表頭，永不跑位 */
         .dataTables_scrollHead {
             position: sticky !important;
             top: 0;
-            z-index: 1030; /* 確保蓋過其他元素 */
-            background-color: #f8f9fa; /* 配合背景色 */
+            z-index: 1030;
+            background-color: #f8f9fa;
         }
-        
-        table.dataTable thead th {
-            background-color: #e9ecef !important; /* 表頭底色 */
-        }
-
-        /* 強制所有表格儲存格絕對不可換行 */
-        table.dataTable th, table.dataTable td {
-            white-space: nowrap !important;
-        }
+        table.dataTable thead th { background-color: #e9ecef !important; }
+        table.dataTable th, table.dataTable td { white-space: nowrap !important; }
 
         #captureArea {
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
@@ -61,16 +56,9 @@
             margin: 0;
             letter-spacing: 1px;
         }
-        .cert-event-subtitle {
-            font-size: 0.8em;
-            color: #aaa;
-            margin: 0;
-        }
-
-        .cert-body {
-            padding: 20px 15px;
-            text-align: center;
-        }
+        .cert-event-subtitle { font-size: 0.8em; color: #aaa; margin: 0; }
+        .cert-body { padding: 20px 15px; text-align: center; }
+        
         #modalName {
             font-size: 2.2em; 
             font-weight: 900;
@@ -104,7 +92,6 @@
             padding: 10px;
             text-align: left;
         }
-        
         .cert-stat-label {
             font-size: 0.7rem; 
             color: #aaa;
@@ -115,15 +102,12 @@
             line-height: 1.2;
             word-break: keep-all; 
         }
-        
         .cert-stat-value {
             font-size: 1.1em;
             font-weight: 700;
             color: #ffffff;
         }
-        .highlight-value {
-            color: #00e676; 
-        }
+        .highlight-value { color: #00e676; }
 
         .modal-footer {
             border-top: none;
@@ -140,16 +124,13 @@
         #btnDownloadImg:hover {
             background: linear-gradient(45deg, #ffaa00, #ffd700);
         }
-        
-        #runnerModal .modal-header {
-            display: none;
-        }
+        #runnerModal .modal-header { display: none; }
     </style>
 </head>
 <body>
     <div class="container-fluid container-box">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="m-0" data-i18n="title">🏃‍♂️ 東京馬拉松 2026 非官方成績查詢系統</h2>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+            <h2 class="m-0 text-center text-md-start" data-i18n="title">🏃‍♂️ 東京馬拉松 2026 非官方成績查詢系統</h2>
             <div class="btn-group" role="group">
                 <input type="radio" class="btn-check" name="langSwitch" id="lang-zh" value="zh" checked>
                 <label class="btn btn-outline-secondary btn-sm" for="lang-zh">中</label>
@@ -336,8 +317,8 @@
                 columns: globalColumns,
                 pageLength: 50,
                 scrollX: true,
-                autoWidth: false, // 確保 CSS 掌管寬度
-                // 移除了 fixedHeader: true，交給 CSS 處理
+                autoWidth: false,
+                deferRender: true, /* ★ 效能救星：只渲染目前可見的資料，記憶體使用量狂降 99% */
                 order: [[0, 'asc']], 
                 dom: '<"top"i>rt<"bottom"flp><"clear">',
                 language: {
@@ -355,7 +336,6 @@
             dtInstance.column('Name:name').search($('#filter-name').val()).draw(false);
         }
 
-        // 移除了 JS 重新計算寬度的調整碼，徹底依賴原生的流暢度
         $(window).on('resize', function () {
             if (dtInstance) dtInstance.columns.adjust();
         });
@@ -386,8 +366,8 @@
                 }
             });
 
-            // 更換版號確保測試完全抓新版
-            let csvUrl = "tokyo2026_results_final.csv?v=3.0"; 
+            // 確保手機版更新抓取最新代碼
+            let csvUrl = "tokyo2026_results_final.csv?v=4.0"; 
 
             Papa.parse(csvUrl, {
                 download: true, 
