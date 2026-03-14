@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <title>東京馬拉松 2026 非官方成績查詢系統</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.bootstrap5.min.css" rel="stylesheet">
+    
+    <style>
+        body { padding: 20px; background-color: #f8f9fa; }
+        .container-box { background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .filter-section { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .footer-sponsor { text-align: center; margin-top: 30px; font-size: 0.9em; color: #6c757d; }
+        .footer-sponsor a { text-decoration: none; font-weight: bold; color: #ff813f; }
+        .runner-link { cursor: pointer; color: #0d6efd; text-decoration: underline; }
+        
+        /* 避免語言切換按鈕文字折行 */
+        .btn-group label { white-space: nowrap; }
+
+        /* CSS 原生 Sticky 固定表頭，永不跑位 */
+        .dataTables_scrollHead {
+            position: sticky !important;
+            top: 0;
+            z-index: 1030;
+            background-color: #f8f9fa;
+        }
+        table.dataTable thead th { background-color: #e9ecef !important; }
+        table.dataTable th, table.dataTable td { white-space: nowrap !important; }
+
+        /* 修正 FixedColumns 凍結欄位的背景色，避免透明重疊 */
+        table.dataTable.table-striped > tbody > tr.odd > * { box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.05); }
+        table.dataTable > tbody > tr > td.dtfc-fixed-left { background-color: #fff; }
+        table.dataTable.table-striped > tbody > tr.odd > td.dtfc-fixed-left { background-color: #f2f2f2; }
+
+        #captureArea {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid #3d3d3d;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        .cert-header {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #444;
+        }
+        .cert-event-title {
+            font-size: 1.2em;
+            font-weight: 800;
+            color: #ffd700; 
+            margin: 0;
+            letter-spacing: 1px;
+        }
+        .cert-event-subtitle { font-size: 0.8em; color: #aaa; margin: 0; }
+        .cert-body { padding: 20px 15px; text-align: center; }
+        
+        #modalName {
+            font-size: 2.2em; 
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 5px;
+            line-height: 1.1;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+        .cert-bib-tag {
+            font-size: 1em;
+            background-color: #ffd700;
+            color: #000;
+            padding: 3px 12px;
+            border-radius: 50px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .cert-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .cert-stat-card {
+            background-color: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: left;
+        }
+        .cert-stat-label {
+            font-size: 0.7rem; 
+            color: #aaa;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: flex-start;
+            gap: 4px;
+            line-height: 1.2;
+            word-break: keep-all; 
+        }
+        .cert-stat-value {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .highlight-value { color: #00e676; }
+
+        .modal-footer {
+            border-top: none;
+            padding: 0 15px 15px 15px;
+            background-color: transparent;
+        }
+        #btnDownloadImg {
+            background: linear-gradient(45deg, #ffd700, #ffaa00); 
+            border: none;
+            color: #000;
+            font-size: 1em;
+            padding: 10px;
+        }
+        #btnDownloadImg:hover {
+            background: linear-gradient(45deg, #ffaa00, #ffd700);
+        }
+        #runnerModal .modal-header { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid container-box">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+            <h2 class="m-0 text-center text-md-start" data-i18n="title">🏃‍♂️ 東京馬拉松 2026 非官方成績查詢系統</h2>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="langSwitch" id="lang-zh" value="zh" checked>
+                <label class="btn btn-outline-secondary btn-sm" for="lang-zh">中</label>
+                <input type="radio" class="btn-check" name="langSwitch" id="lang-en" value="en">
+                <label class="btn btn-outline-secondary btn-sm" for="lang-en">ENG</label>
+                <input type="radio" class="btn-check" name="langSwitch" id="lang-ja" value="ja">
+                <label class="btn btn-outline-secondary btn-sm" for="lang-ja">日本語</label>
+            </div>
+        </div>
+
+        <div class="filter-section row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold" data-i18n="lblNatl">🌍 國家/地區：</label>
+                <select id="filter-natl" class="form-select"><option value="" data-i18n="showAll">顯示全部</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold" data-i18n="lblGender">🚻 性別：</label>
+                <select id="filter-gender" class="form-select"><option value="" data-i18n="showAll">顯示全部</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold" data-i18n="lblBib">🔢 號碼布：</label>
+                <input type="text" id="filter-bib" class="form-control" data-i18n-ph="phBib" placeholder="輸入號碼精確搜尋...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold" data-i18n="lblName">👤 姓名：</label>
+                <input type="text" id="filter-name" class="form-control" data-i18n-ph="phName" placeholder="例如：WONG">
+            </div>
+            <div class="col-12 text-end mt-3">
+                <button id="btn-clear-filters" class="btn btn-warning btn-sm fw-bold" data-i18n="btnClear">🧹 清除所有搜尋條件</button>
+            </div>
+        </div>
+
+        <div id="loading" class="text-center my-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2" data-i18n="loading">成績資料載入中，請稍候...</p>
+        </div>
+
+        <div id="tableContainer" style="display:none; width: 100%;">
+            <table id="resultsTable" class="table table-striped table-hover nowrap" style="width:100%"></table>
+        </div>
+
+        <div class="footer-sponsor">
+            <p><span data-i18n="sponsor">系統開發與維護：</span><a href="https://www.buymeacoffee.com/fstudio" target="_blank">FStudio ☕</a></p>
+        </div>
+    </div>
+
+    <div class="modal fade" id="runnerModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content" id="captureArea">
+          <div class="cert-header">
+              <p class="cert-event-title">東京馬拉松 2026</p>
+              <p class="cert-event-subtitle">Unofficial Finisher Card</p>
+          </div>
+          <div class="cert-body">
+              <div id="modalName">Name</div>
+              <div id="modalBibTag" class="cert-bib-tag">Bib ----</div>
+              <div id="modalContent"></div>
+          </div>
+          <div class="modal-footer border-top-0 pt-0" id="modalFooterBtns">
+            <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm" id="btnDownloadImg" data-i18n="btnDownload">📥 儲存專屬成績卡</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    
+    <script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        const dict = {
+            zh: {
+                eventTitle: "東京馬拉松 2026",
+                title: "🏃‍♂️ 東京馬拉松 2026 非官方成績查詢系統", lblNatl: "🌍 國家/地區：", lblGender: "🚻 性別：", lblBib: "🔢 號碼布：", lblName: "👤 姓名：",
+                showAll: "顯示全部", phBib: "輸入號碼精確搜尋...", phName: "例如：WONG", loading: "成績資料載入中，請稍候...", sponsor: "系統開發與維護：",
+                mTotal: "全部", mPeople: "人", mFemale: "女", mMale: "男", mNonbinary: "非二元",
+                mRankNet: "總名次 (Net)", mRankGun: "性別名次 (Gun)", mRankNGNet: "地區/性別名次 (Net)", mRankNNet: "地區名次 (Net)",
+                mTimeNet: "晶片時間 (Net)", mTimeGross: "大會時間 (Gross)",
+                btnDownload: "📥 儲存專屬成績卡", btnClear: "🧹 清除所有搜尋條件",
+                dtEmpty: "表中資料為空", dtInfo: "顯示第 _START_ 至 _END_ 項結果，共 _TOTAL_ 項", dtInfoEmpty: "顯示 0 項結果", dtLen: "顯示 _MENU_ 項", dtZero: "沒有符合的結果",
+                col_Overall_Rank_Net: "總名次(Net)", col_Gender: "性別", col_Gender_Rank_Gun: "性別名次(Gun)", col_Natl: "國家/地區", col_Natl_Gender_Rank_Net: "區/性名次", col_Natl_Rank_Net: "區域名次", col_Bib: "號碼布", col_Name: "姓名", col_Net_Time: "晶片時間", col_Gross_Time: "大會時間"
+            },
+            en: {
+                eventTitle: "Tokyo Marathon 2026",
+                title: "🏃‍♂️ Tokyo Marathon 2026 Unofficial Results System", lblNatl: "🌍 Country/Region:", lblGender: "🚻 Gender:", lblBib: "🔢 Bib:", lblName: "👤 Name:",
+                showAll: "All", phBib: "Exact search...", phName: "e.g., WONG", loading: "Loading data...", sponsor: "Developed by: ",
+                mTotal: "Total ", mPeople: "", mFemale: "F ", mMale: "M ", mNonbinary: "NB ",
+                mRankNet: "Overall Rank (Net)", mRankGun: "Gender Rank (Gun)", mRankNGNet: "Natl/Gender Rank (Net)", mRankNNet: "Natl Rank (Net)",
+                mTimeNet: "Net Time", mTimeGross: "Gross Time",
+                btnDownload: "📥 Save Finisher Card", btnClear: "🧹 Clear All Filters",
+                dtEmpty: "No data available", dtInfo: "Showing _START_ to _END_ of _TOTAL_ entries", dtInfoEmpty: "Showing 0 entries", dtLen: "Show _MENU_ entries", dtZero: "No matching records found",
+                col_Overall_Rank_Net: "Overall Rank (Net)", col_Gender: "Gender", col_Gender_Rank_Gun: "Gender Rank (Gun)", col_Natl: "Natl", col_Natl_Gender_Rank_Net: "Natl/Gen Rank", col_Natl_Rank_Net: "Natl Rank", col_Bib: "Bib", col_Name: "Name", col_Net_Time: "Net Time", col_Gross_Time: "Gross Time"
+            },
+            ja: {
+                eventTitle: "東京マラソン 2026",
+                title: "🏃‍♂️ 東京マラソン 2026 非公式記録検索システム", lblNatl: "🌍 国/地域：", lblGender: "🚻 性別：", lblBib: "🔢 ナンバーカード：", lblName: "👤 氏名：",
+                showAll: "すべて", phBib: "ナンバーを正確に入力...", phName: "例：WONG", loading: "データ読み込み中...", sponsor: "開発・保守：",
+                mTotal: "全体 ", mPeople: "人", mFemale: "女子 ", mMale: "男子 ", mNonbinary: "ノンバイナリー ",
+                mRankNet: "総合順位 (Net)", mRankGun: "男女別順位 (Gun)", mRankNGNet: "国・男女別順位 (Net)", mRankNNet: "国別順位 (Net)",
+                mTimeNet: "ネットタイム", mTimeGross: "グロスタイム",
+                btnDownload: "📥 記録証を保存", btnClear: "🧹 すべての検索条件をクリア",
+                dtEmpty: "データがありません", dtInfo: "全 _TOTAL_ 件中 _START_ から _END_ まで表示", dtInfoEmpty: "0 件表示", dtLen: "_MENU_ 件表示", dtZero: "一致する記録がありません",
+                col_Overall_Rank_Net: "総合順位(Net)", col_Gender: "性別", col_Gender_Rank_Gun: "男女別順位(Gun)", col_Natl: "国/地域", col_Natl_Gender_Rank_Net: "国・男女順位", col_Natl_Rank_Net: "国別順位", col_Bib: "ナンバー", col_Name: "氏名", col_Net_Time: "ネットタイム", col_Gross_Time: "グロスタイム"
+            }
+        };
+
+        let currentLang = 'zh';
+        let dtInstance = null;
+        let globalData = [];
+        let globalStats = null;
+        let globalColumns = [];
+
+        function updateUI() {
+            $('[data-i18n]').each(function() { $(this).text(dict[currentLang][$(this).data('i18n')]); });
+            $('[data-i18n-ph]').each(function() { $(this).attr('placeholder', dict[currentLang][$(this).data('i18n-ph')]); });
+            $('#filter-natl option:first-child').text(dict[currentLang].showAll);
+            $('#filter-gender option:first-child').text(dict[currentLang].showAll);
+            
+            $('.cert-event-title').text(dict[currentLang].eventTitle);
+            
+            if (currentLang === 'en') {
+                $('.cert-event-subtitle').text('Unofficial Finisher Card');
+            } else if (currentLang === 'ja') {
+                $('.cert-event-subtitle').text('非公式記録証');
+            } else {
+                $('.cert-event-subtitle').text('完賽成績証明');
+            }
+            
+            $('#filter-gender option').each(function() {
+                if ($(this).val() !== '') {
+                    let displayText = currentLang === 'zh' ? $(this).data('zh') : (currentLang === 'ja' ? $(this).data('ja') : $(this).data('en'));
+                    $(this).text(displayText);
+                }
+            });
+        }
+
+        function initTable() {
+            if (dtInstance) {
+                dtInstance.destroy();
+                $('#resultsTable').empty(); 
+            }
+            
+            $('#resultsTable').html('<thead><tr></tr></thead><tbody></tbody>');
+
+            globalColumns = Object.keys(globalData[0]).map(key => {
+                let dictKey = 'col_' + key;
+                let titleStr = dict[currentLang][dictKey] || key;
+                let colDef = { title: titleStr, data: key, name: key };
+                
+                if (key === 'Name') {
+                    colDef.render = function(val, type) {
+                        return type === 'display' ? `<span class="runner-link fw-bold">${val}</span>` : val;
+                    };
+                } else if (key === 'Gender') {
+                    colDef.render = function(val, type) {
+                        if (type === 'display') {
+                            if (val === 'Male') return currentLang === 'en' ? 'Male' : '男子';
+                            if (val === 'Female') return currentLang === 'en' ? 'Female' : '女子';
+                            if (val === 'Nonbinary') {
+                                if (currentLang === 'en') return 'Nonbinary';
+                                if (currentLang === 'ja') return 'ノンバイナリー';
+                                return '非二元性別';
+                            }
+                        }
+                        return val;
+                    };
+                } else if (key.includes('Rank')) {
+                    colDef.type = 'num';
+                    colDef.render = function(val, type) {
+                        if (type === 'sort' || type === 'type') {
+                            if (!val || val === '-' || String(val).trim() === '') return 9999999;
+                            let num = parseInt(String(val).replace(/,/g, ''), 10);
+                            return isNaN(num) ? 9999999 : num;
+                        }
+                        return val;
+                    };
+                } else if (key.includes('Time')) {
+                    colDef.render = function(val, type) {
+                        if (type === 'sort') {
+                            return (val === '-' || val === '' || !val) ? '99:99:99' : val;
+                        }
+                        return val;
+                    };
+                }
+                return colDef;
+            });
+
+            // 新增 fixedColumns 設定
+            dtInstance = $('#resultsTable').DataTable({
+                data: globalData,
+                columns: globalColumns,
+                pageLength: 50,
+                scrollX: true,
+                scrollCollapse: true,
+                fixedColumns: {
+                    left: 2 // 凍結左側前 2 欄 (依據截圖通常是 號碼布 與 姓名)
+                },
+                autoWidth: false,
+                deferRender: true,
+                order: [[0, 'asc']], 
+                dom: '<"top"i>rt<"bottom"flp><"clear">',
+                language: {
+                    emptyTable: dict[currentLang].dtEmpty, info: dict[currentLang].dtInfo, infoEmpty: dict[currentLang].dtInfoEmpty,
+                    lengthMenu: dict[currentLang].dtLen, zeroRecords: dict[currentLang].dtZero
+                }
+            });
+
+            dtInstance.column('Natl:name').search($('#filter-natl').val()).draw(false);
+            dtInstance.column('Gender:name').search($('#filter-gender').val()).draw(false);
+            
+            let bibVal = $('#filter-bib').val().trim();
+            let bibSearchVal = bibVal ? '^' + bibVal + '$' : '';
+            dtInstance.column('Bib:name').search(bibSearchVal, true, false).draw(false);
+            dtInstance.column('Name:name').search($('#filter-name').val()).draw(false);
+        }
+
+        $(window).on('resize', function () {
+            if (dtInstance) dtInstance.columns.adjust();
+        });
+
+        $(document).ready(function() {
+            if (window.history && window.history.replaceState) {
+                let cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                if (window.location.search.includes('utm_') || window.location.search.includes('media_id')) {
+                    window.history.replaceState({}, document.title, cleanUrl);
+                }
+            }
+
+            updateUI();
+
+            $('input[name="langSwitch"]').on('change', function() {
+                currentLang = $(this).val();
+                updateUI();
+                if(globalData.length > 0) {
+                    $('#tableContainer').hide(); 
+                    $('#loading').show(); 
+                    
+                    setTimeout(function() {
+                        $('#loading').hide();
+                        $('#tableContainer').show(); 
+                        initTable();
+                        setTimeout(() => { if(dtInstance) dtInstance.columns.adjust(); }, 100);
+                    }, 100);
+                }
+            });
+
+            let csvUrl = "tokyo2026_results_final.csv?v=4.0"; 
+
+            Papa.parse(csvUrl, {
+                download: true, 
+                header: true, 
+                skipEmptyLines: true,
+                error: function(err, file, inputElem, reason) {
+                    $('#loading').html('<p class="text-danger fw-bold">資料載入失敗，請檢查網路連線或清除瀏覽器快取。<br>原因: ' + (reason || '未知錯誤') + '</p>');
+                    console.error("CSV Load Error:", err);
+                },
+                complete: function(results) {
+                    globalData = results.data;
+                    if(globalData.length === 0) {
+                        $('#loading').html('<p class="text-danger">找不到資料。</p>');
+                        return;
+                    }
+
+                    globalStats = { total: globalData.length, female: 0, male: 0, nonbinary: 0, natl: {} };
+                    globalData.forEach(row => {
+                        const g = (row['Gender'] || '').trim();
+                        const n = (row['Natl'] || '').trim();
+                        
+                        if(g === 'Female') globalStats.female++; 
+                        else if(g === 'Male') globalStats.male++;
+                        else if(g === 'Nonbinary') globalStats.nonbinary++;
+                        
+                        if(n) {
+                            if(!globalStats.natl[n]) globalStats.natl[n] = { total: 0, female: 0, male: 0, nonbinary: 0 };
+                            globalStats.natl[n].total++;
+                            if(g === 'Female') globalStats.natl[n].female++; 
+                            else if(g === 'Male') globalStats.natl[n].male++;
+                            else if(g === 'Nonbinary') globalStats.natl[n].nonbinary++;
+                        }
+                    });
+
+                    $('#loading').hide();
+                    $('#tableContainer').show(); 
+                    initTable(); 
+                    setTimeout(() => { if(dtInstance) dtInstance.columns.adjust(); }, 150);
+
+                    function updateDynamicDropdowns() {
+                        let currentNatl = $('#filter-natl').val() || '';
+                        let currentGender = $('#filter-gender').val() || '';
+                        
+                        let availableNatls = new Set();
+                        let availableGenders = new Set();
+                        
+                        globalData.forEach(row => {
+                            let n = (row['Natl'] || '').trim();
+                            let g = (row['Gender'] || '').trim();
+                            if (!currentGender || g === currentGender) { if (n) availableNatls.add(n); }
+                            if (!currentNatl || n === currentNatl) { if (g) availableGenders.add(g); }
+                        });
+                        
+                        $('#filter-natl').empty().append(`<option value="">${dict[currentLang].showAll}</option>`);
+                        Array.from(availableNatls).sort().forEach(val => {
+                            $('#filter-natl').append(`<option value="${val}" ${val === currentNatl ? 'selected' : ''}>${val}</option>`);
+                        });
+                        
+                        $('#filter-gender').empty().append(`<option value="">${dict[currentLang].showAll}</option>`);
+                        Array.from(availableGenders).sort().forEach(val => {
+                            let zhText = val === 'Male' ? '男子' : (val === 'Female' ? '女子' : (val === 'Nonbinary' ? '非二元性別' : val));
+                            let jaText = val === 'Male' ? '男子' : (val === 'Female' ? '女子' : (val === 'Nonbinary' ? 'ノンバイナリー' : val));
+                            let enText = val === 'Nonbinary' ? 'Nonbinary' : val;
+                            let displayText = currentLang === 'zh' ? zhText : (currentLang === 'ja' ? jaText : enText);
+                            
+                            $('#filter-gender').append(`<option value="${val}" data-zh="${zhText}" data-en="${enText}" data-ja="${jaText}" ${val === currentGender ? 'selected' : ''}>${displayText}</option>`);
+                        });
+                    }
+
+                    updateDynamicDropdowns();
+                    updateUI(); 
+
+                    $('#filter-natl').on('change', function() { 
+                        dtInstance.column('Natl:name').search(this.value).draw(); 
+                        updateDynamicDropdowns();
+                    });
+                    
+                    $('#filter-gender').on('change', function() { 
+                        dtInstance.column('Gender:name').search(this.value).draw(); 
+                        updateDynamicDropdowns();
+                    });
+
+                    $('#filter-bib').on('keyup', function() { 
+                        let val = this.value.trim();
+                        let searchVal = val ? '^' + val + '$' : '';
+                        dtInstance.column('Bib:name').search(searchVal, true, false).draw(); 
+                    });
+                    
+                    $('#filter-name').on('keyup', function() { 
+                        dtInstance.column('Name:name').search(this.value).draw(); 
+                    });
+
+                    $('#btn-clear-filters').on('click', function() {
+                        $('#filter-natl').val('');
+                        $('#filter-gender').val('');
+                        $('#filter-bib').val('');
+                        $('#filter-name').val('');
+                        
+                        dtInstance.search('').columns().search('').draw();
+                        updateDynamicDropdowns();
+                    });
+
+                    $('#resultsTable').on('click', '.runner-link', function() {
+                        let row = dtInstance.row($(this).closest('tr')).data();
+                        let g = (row['Gender'] || '').trim();
+                        let n = (row['Natl'] || '').trim();
+                        let nStats = globalStats.natl[n] || { total: 0, female: 0, male: 0, nonbinary: 0 };
+                        
+                        let genderTotal = 0;
+                        if(g === 'Female') genderTotal = globalStats.female;
+                        else if(g === 'Male') genderTotal = globalStats.male;
+                        else if(g === 'Nonbinary') genderTotal = globalStats.nonbinary;
+                        
+                        let natlGenderTotal = 0;
+                        if(g === 'Female') natlGenderTotal = nStats.female;
+                        else if(g === 'Male') natlGenderTotal = nStats.male;
+                        else if(g === 'Nonbinary') natlGenderTotal = nStats.nonbinary;
+                        
+                        let d = dict[currentLang];
+                        
+                        let displayG = g;
+                        if (currentLang === 'ja') {
+                            displayG = g === 'Male' ? '男子' : (g === 'Female' ? '女子' : (g === 'Nonbinary' ? 'ノンバイナリー' : g));
+                        } else if (currentLang === 'zh') {
+                            displayG = g === 'Male' ? '男子' : (g === 'Female' ? '女子' : (g === 'Nonbinary' ? '非二元性別' : g));
+                        }
+                        
+                        let displayN = n;
+
+                        let r1 = (row['Overall_Rank_Net'] === '-' || !row['Overall_Rank_Net']) ? '-' : `${row['Overall_Rank_Net']}/${globalStats.total}`;
+                        let r2 = (row['Gender_Rank_Gun'] === '-' || !row['Gender_Rank_Gun']) ? '-' : `${row['Gender_Rank_Gun']}/${genderTotal}`;
+                        let r3 = (row['Natl_Gender_Rank_Net'] === '-' || !row['Natl_Gender_Rank_Net']) ? '-' : `${row['Natl_Gender_Rank_Net']}/${natlGenderTotal}`;
+                        let r4 = (row['Natl_Rank_Net'] === '-' || !row['Natl_Rank_Net']) ? '-' : `${row['Natl_Rank_Net']}/${nStats.total}`;
+
+                        $('#modalBibTag').text(`${displayG} ${displayN} : Bib ${row['Bib']}`);
+                        
+                        let nbGlobalStr = globalStats.nonbinary > 0 ? `, ${d.mNonbinary}${globalStats.nonbinary}${d.mPeople}` : '';
+                        let nbNatlStr = nStats.nonbinary > 0 ? `, ${d.mNonbinary}${nStats.nonbinary}${d.mPeople}` : '';
+
+                        let modalHtml = `
+                            <div class="cert-stats-grid mb-3">
+                                <div class="cert-stat-card">
+                                    <div class="cert-stat-label"><span>⏱️</span><span>${d.mTimeNet}</span></div>
+                                    <div class="cert-stat-value text-warning">${row['Net_Time']}</div>
+                                </div>
+                                <div class="cert-stat-card">
+                                    <div class="cert-stat-label"><span>🏁</span><span>${d.mTimeGross}</span></div>
+                                    <div class="cert-stat-value">${row['Gross_Time']}</div>
+                                </div>
+                            </div>
+
+                            <div class="text-secondary text-start mb-3 p-2 rounded" style="background-color: rgba(0,0,0,0.2); font-size: 0.75em; line-height: 1.4;">
+                                <p class="m-0">${d.mTotal}: ${globalStats.total}${d.mPeople} (${d.mFemale}${globalStats.female}${d.mPeople}, ${d.mMale}${globalStats.male}${d.mPeople}${nbGlobalStr})</p>
+                                <p class="m-0">${displayN}: ${nStats.total}${d.mPeople} (${d.mFemale}${nStats.female}${d.mPeople}, ${d.mMale}${nStats.male}${d.mPeople}${nbNatlStr})</p>
+                            </div>
+
+                            <div class="cert-stats-grid">
+                                <div class="cert-stat-card">
+                                    <div class="cert-stat-label"><span>🌍</span><span>${d.mRankNet}</span></div>
+                                    <div class="cert-stat-value highlight-value">${r1}</div>
+                                </div>
+                                <div class="cert-stat-card">
+                                    <div class="cert-stat-label"><span>🚻</span><span>${d.mRankGun}</span></div>
+                                    <div class="cert-stat-value highlight-value">${r2}</div>
+                                </div>
+                                <div class="cert-stat-card">
+                                    <div class="cert-stat-label"><span>🗺️</span><span>${d.mRankNNet}</span></div>
+                                    <div class="cert-stat-value highlight-value">${r4}</div>
+                                </div>
+                                <div class="cert-stat-card">
+                                    <div class="cert-stat-label"><span>🏅</span><span>${d.mRankNGNet}</span></div>
+                                    <div class="cert-stat-value highlight-value">${r3}</div>
+                                </div>
+                            </div>
+                        `;
+                        $('#modalName').text(row['Name']);
+                        $('#modalContent').html(modalHtml);
+                        
+                        let runnerModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('runnerModal'));
+                        runnerModal.show();
+                    });
+                }
+            });
+
+            $('#btnDownloadImg').on('click', function() {
+                const targetArea = document.getElementById('captureArea');
+                const footerBtns = document.getElementById('modalFooterBtns');
+                
+                footerBtns.style.display = 'none';
+
+                html2canvas(targetArea, { backgroundColor: '#2d2d2d', scale: 3, useCORS: true }).then(canvas => {
+                    footerBtns.style.display = '';
+                    
+                    let link = document.createElement('a');
+                    let runnerName = $('#modalName').text().trim().replace(/\s+/g, '_');
+                    
+                    link.download = `Tokyo2026_${runnerName}_Card.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.95);
+                    link.click();
+                });
+            });
+        });
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyArXbvUxQGW4w0dFW5O2gLYsmTXzFu09cc",
+            authDomain: "tokyomarathon2026result.firebaseapp.com",
+            projectId: "tokyomarathon2026result",
+            storageBucket: "tokyomarathon2026result.firebasestorage.app",
+            messagingSenderId: "406690127914",
+            appId: "1:406690127914:web:9ff46da29d7a092b386353",
+            measurementId: "G-PJ1KWYM70F"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        console.log("Firebase Analytics 已啟動，開始追蹤流量");
+    </script>
+</body>
+</html>
