@@ -24,8 +24,8 @@
         /* 避免語言切換按鈕文字折行 */
         .btn-group label { white-space: nowrap; }
 
-        /* CSS 原生 Sticky 固定表頭，永不跑位 */
-        .dataTables_scrollHead {
+        /* CSS 原生 Sticky 固定表頭 */
+        .dataTables_scrollHead, thead tr {
             position: sticky !important;
             top: 0;
             z-index: 1030;
@@ -158,6 +158,9 @@
                 <label class="form-label fw-bold" data-i18n="lblName">👤 姓名：</label>
                 <input type="text" id="filter-name" class="form-control" data-i18n-ph="phName" placeholder="例如：WONG">
             </div>
+            <div class="col-12 text-end mt-3">
+                <button id="btn-clear-filters" class="btn btn-warning btn-sm fw-bold" data-i18n="btnClear">🧹 清除所有搜尋條件</button>
+            </div>
         </div>
 
         <div id="loading" class="text-center my-5">
@@ -197,6 +200,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -206,10 +210,10 @@
                 eventTitle: "東京馬拉松 2026",
                 title: "🏃‍♂️ 東京馬拉松 2026 非官方成績查詢系統", lblNatl: "🌍 國家/地區：", lblGender: "🚻 性別：", lblBib: "🔢 號碼布：", lblName: "👤 姓名：",
                 showAll: "顯示全部", phBib: "輸入號碼精確搜尋...", phName: "例如：WONG", loading: "成績資料載入中，請稍候...", sponsor: "系統開發與維護：",
-                mTotal: "全部", mPeople: "人", mFemale: "女", mMale: "男", 
+                mTotal: "全部", mPeople: "人", mFemale: "女", mMale: "男", mNonbinary: "非二元",
                 mRankNet: "總名次 (Net)", mRankGun: "性別名次 (Gun)", mRankNGNet: "地區/性別名次 (Net)", mRankNNet: "地區名次 (Net)",
                 mTimeNet: "晶片時間 (Net)", mTimeGross: "大會時間 (Gross)",
-                btnDownload: "📥 儲存專屬成績卡", 
+                btnDownload: "📥 儲存專屬成績卡", btnClear: "🧹 清除所有搜尋條件",
                 dtEmpty: "表中資料為空", dtInfo: "顯示第 _START_ 至 _END_ 項結果，共 _TOTAL_ 項", dtInfoEmpty: "顯示 0 項結果", dtLen: "顯示 _MENU_ 項", dtZero: "沒有符合的結果",
                 col_Overall_Rank_Net: "總名次(Net)", col_Gender: "性別", col_Gender_Rank_Gun: "性別名次(Gun)", col_Natl: "國家/地區", col_Natl_Gender_Rank_Net: "區/性名次", col_Natl_Rank_Net: "區域名次", col_Bib: "號碼布", col_Name: "姓名", col_Net_Time: "晶片時間", col_Gross_Time: "大會時間"
             },
@@ -217,10 +221,10 @@
                 eventTitle: "Tokyo Marathon 2026",
                 title: "🏃‍♂️ Tokyo Marathon 2026 Unofficial Results System", lblNatl: "🌍 Country/Region:", lblGender: "🚻 Gender:", lblBib: "🔢 Bib:", lblName: "👤 Name:",
                 showAll: "All", phBib: "Exact search...", phName: "e.g., WONG", loading: "Loading data...", sponsor: "Developed by: ",
-                mTotal: "Total ", mPeople: "", mFemale: "F ", mMale: "M ", 
+                mTotal: "Total ", mPeople: "", mFemale: "F ", mMale: "M ", mNonbinary: "NB ",
                 mRankNet: "Overall Rank (Net)", mRankGun: "Gender Rank (Gun)", mRankNGNet: "Natl/Gender Rank (Net)", mRankNNet: "Natl Rank (Net)",
                 mTimeNet: "Net Time", mTimeGross: "Gross Time",
-                btnDownload: "📥 Save Finisher Card", 
+                btnDownload: "📥 Save Finisher Card", btnClear: "🧹 Clear All Filters",
                 dtEmpty: "No data available", dtInfo: "Showing _START_ to _END_ of _TOTAL_ entries", dtInfoEmpty: "Showing 0 entries", dtLen: "Show _MENU_ entries", dtZero: "No matching records found",
                 col_Overall_Rank_Net: "Overall Rank (Net)", col_Gender: "Gender", col_Gender_Rank_Gun: "Gender Rank (Gun)", col_Natl: "Natl", col_Natl_Gender_Rank_Net: "Natl/Gen Rank", col_Natl_Rank_Net: "Natl Rank", col_Bib: "Bib", col_Name: "Name", col_Net_Time: "Net Time", col_Gross_Time: "Gross Time"
             },
@@ -228,10 +232,10 @@
                 eventTitle: "東京マラソン 2026",
                 title: "🏃‍♂️ 東京マラソン 2026 非公式記録検索システム", lblNatl: "🌍 国/地域：", lblGender: "🚻 性別：", lblBib: "🔢 ナンバーカード：", lblName: "👤 氏名：",
                 showAll: "すべて", phBib: "ナンバーを正確に入力...", phName: "例：WONG", loading: "データ読み込み中...", sponsor: "開発・保守：",
-                mTotal: "全体 ", mPeople: "人", mFemale: "女子 ", mMale: "男子 ", 
+                mTotal: "全体 ", mPeople: "人", mFemale: "女子 ", mMale: "男子 ", mNonbinary: "ノンバイナリー ",
                 mRankNet: "総合順位 (Net)", mRankGun: "男女別順位 (Gun)", mRankNGNet: "国・男女別順位 (Net)", mRankNNet: "国別順位 (Net)",
                 mTimeNet: "ネットタイム", mTimeGross: "グロスタイム",
-                btnDownload: "📥 記録証を保存", 
+                btnDownload: "📥 記録証を保存", btnClear: "🧹 すべての検索条件をクリア",
                 dtEmpty: "データがありません", dtInfo: "全 _TOTAL_ 件中 _START_ から _END_ まで表示", dtInfoEmpty: "0 件表示", dtLen: "_MENU_ 件表示", dtZero: "一致する記録がありません",
                 col_Overall_Rank_Net: "総合順位(Net)", col_Gender: "性別", col_Gender_Rank_Gun: "男女別順位(Gun)", col_Natl: "国/地域", col_Natl_Gender_Rank_Net: "国・男女順位", col_Natl_Rank_Net: "国別順位", col_Bib: "ナンバー", col_Name: "氏名", col_Net_Time: "ネットタイム", col_Gross_Time: "グロスタイム"
             }
@@ -261,7 +265,8 @@
             
             $('#filter-gender option').each(function() {
                 if ($(this).val() !== '') {
-                    $(this).text($(this).data(currentLang));
+                    let displayText = currentLang === 'zh' ? $(this).data('zh') : (currentLang === 'ja' ? $(this).data('ja') : $(this).data('en'));
+                    $(this).text(displayText);
                 }
             });
         }
@@ -288,6 +293,11 @@
                         if (type === 'display') {
                             if (val === 'Male') return currentLang === 'en' ? 'Male' : '男子';
                             if (val === 'Female') return currentLang === 'en' ? 'Female' : '女子';
+                            if (val === 'Nonbinary') {
+                                if (currentLang === 'en') return 'Nonbinary';
+                                if (currentLang === 'ja') return 'ノンバイナリー';
+                                return '非二元性別';
+                            }
                         }
                         return val;
                     };
@@ -312,13 +322,14 @@
                 return colDef;
             });
 
+            // 移除 Responsive，改回純 scrollX
             dtInstance = $('#resultsTable').DataTable({
                 data: globalData,
                 columns: globalColumns,
                 pageLength: 50,
-                scrollX: true,
+                scrollX: true, // 確保開啟水平捲動
                 autoWidth: false,
-                deferRender: true, /* ★ 效能救星：只渲染目前可見的資料，記憶體使用量狂降 99% */
+                deferRender: true,
                 order: [[0, 'asc']], 
                 dom: '<"top"i>rt<"bottom"flp><"clear">',
                 language: {
@@ -366,7 +377,6 @@
                 }
             });
 
-            // 確保手機版更新抓取最新代碼
             let csvUrl = "tokyo2026_results_final.csv?v=4.0"; 
 
             Papa.parse(csvUrl, {
@@ -384,15 +394,21 @@
                         return;
                     }
 
-                    globalStats = { total: globalData.length, female: 0, male: 0, natl: {} };
+                    globalStats = { total: globalData.length, female: 0, male: 0, nonbinary: 0, natl: {} };
                     globalData.forEach(row => {
                         const g = (row['Gender'] || '').trim();
                         const n = (row['Natl'] || '').trim();
-                        if(g === 'Female') globalStats.female++; else if(g === 'Male') globalStats.male++;
+                        
+                        if(g === 'Female') globalStats.female++; 
+                        else if(g === 'Male') globalStats.male++;
+                        else if(g === 'Nonbinary') globalStats.nonbinary++;
+                        
                         if(n) {
-                            if(!globalStats.natl[n]) globalStats.natl[n] = { total: 0, female: 0, male: 0 };
+                            if(!globalStats.natl[n]) globalStats.natl[n] = { total: 0, female: 0, male: 0, nonbinary: 0 };
                             globalStats.natl[n].total++;
-                            if(g === 'Female') globalStats.natl[n].female++; else if(g === 'Male') globalStats.natl[n].male++;
+                            if(g === 'Female') globalStats.natl[n].female++; 
+                            else if(g === 'Male') globalStats.natl[n].male++;
+                            else if(g === 'Nonbinary') globalStats.natl[n].nonbinary++;
                         }
                     });
 
@@ -401,27 +417,49 @@
                     initTable(); 
                     setTimeout(() => { if(dtInstance) dtInstance.columns.adjust(); }, 150);
 
-                    const natlSet = new Set(), genderSet = new Set();
-                    globalData.forEach(row => { 
-                        if(row['Natl']) natlSet.add(row['Natl'].trim()); 
-                        if(row['Gender']) genderSet.add(row['Gender'].trim()); 
-                    });
-                    
-                    Array.from(natlSet).sort().forEach(val => {
-                        $('#filter-natl').append(`<option value="${val}">${val}</option>`);
-                    });
-                    
-                    Array.from(genderSet).sort().forEach(val => {
-                        let zhJaText = val === 'Male' ? '男子' : (val === 'Female' ? '女子' : val);
-                        let enText = val;
-                        $('#filter-gender').append(`<option value="${val}" data-zh="${zhJaText}" data-en="${enText}" data-ja="${zhJaText}">${val}</option>`);
-                    });
-                    
-                    updateUI();
+                    function updateDynamicDropdowns() {
+                        let currentNatl = $('#filter-natl').val() || '';
+                        let currentGender = $('#filter-gender').val() || '';
+                        
+                        let availableNatls = new Set();
+                        let availableGenders = new Set();
+                        
+                        globalData.forEach(row => {
+                            let n = (row['Natl'] || '').trim();
+                            let g = (row['Gender'] || '').trim();
+                            if (!currentGender || g === currentGender) { if (n) availableNatls.add(n); }
+                            if (!currentNatl || n === currentNatl) { if (g) availableGenders.add(g); }
+                        });
+                        
+                        $('#filter-natl').empty().append(`<option value="">${dict[currentLang].showAll}</option>`);
+                        Array.from(availableNatls).sort().forEach(val => {
+                            $('#filter-natl').append(`<option value="${val}" ${val === currentNatl ? 'selected' : ''}>${val}</option>`);
+                        });
+                        
+                        $('#filter-gender').empty().append(`<option value="">${dict[currentLang].showAll}</option>`);
+                        Array.from(availableGenders).sort().forEach(val => {
+                            let zhText = val === 'Male' ? '男子' : (val === 'Female' ? '女子' : (val === 'Nonbinary' ? '非二元性別' : val));
+                            let jaText = val === 'Male' ? '男子' : (val === 'Female' ? '女子' : (val === 'Nonbinary' ? 'ノンバイナリー' : val));
+                            let enText = val === 'Nonbinary' ? 'Nonbinary' : val;
+                            let displayText = currentLang === 'zh' ? zhText : (currentLang === 'ja' ? jaText : enText);
+                            
+                            $('#filter-gender').append(`<option value="${val}" data-zh="${zhText}" data-en="${enText}" data-ja="${jaText}" ${val === currentGender ? 'selected' : ''}>${displayText}</option>`);
+                        });
+                    }
 
-                    $('#filter-natl').on('change', function() { dtInstance.column('Natl:name').search(this.value).draw(); });
-                    $('#filter-gender').on('change', function() { dtInstance.column('Gender:name').search(this.value).draw(); });
+                    updateDynamicDropdowns();
+                    updateUI(); 
+
+                    $('#filter-natl').on('change', function() { 
+                        dtInstance.column('Natl:name').search(this.value).draw(); 
+                        updateDynamicDropdowns();
+                    });
                     
+                    $('#filter-gender').on('change', function() { 
+                        dtInstance.column('Gender:name').search(this.value).draw(); 
+                        updateDynamicDropdowns();
+                    });
+
                     $('#filter-bib').on('keyup', function() { 
                         let val = this.value.trim();
                         let searchVal = val ? '^' + val + '$' : '';
@@ -432,17 +470,41 @@
                         dtInstance.column('Name:name').search(this.value).draw(); 
                     });
 
+                    $('#btn-clear-filters').on('click', function() {
+                        $('#filter-natl').val('');
+                        $('#filter-gender').val('');
+                        $('#filter-bib').val('');
+                        $('#filter-name').val('');
+                        
+                        dtInstance.search('').columns().search('').draw();
+                        updateDynamicDropdowns();
+                    });
+
                     $('#resultsTable').on('click', '.runner-link', function() {
                         let row = dtInstance.row($(this).closest('tr')).data();
                         let g = (row['Gender'] || '').trim();
                         let n = (row['Natl'] || '').trim();
-                        let nStats = globalStats.natl[n] || { total: 0, female: 0, male: 0 };
-                        let genderTotal = g === 'Female' ? globalStats.female : globalStats.male;
-                        let natlGenderTotal = g === 'Female' ? nStats.female : nStats.male;
+                        let nStats = globalStats.natl[n] || { total: 0, female: 0, male: 0, nonbinary: 0 };
+                        
+                        let genderTotal = 0;
+                        if(g === 'Female') genderTotal = globalStats.female;
+                        else if(g === 'Male') genderTotal = globalStats.male;
+                        else if(g === 'Nonbinary') genderTotal = globalStats.nonbinary;
+                        
+                        let natlGenderTotal = 0;
+                        if(g === 'Female') natlGenderTotal = nStats.female;
+                        else if(g === 'Male') natlGenderTotal = nStats.male;
+                        else if(g === 'Nonbinary') natlGenderTotal = nStats.nonbinary;
                         
                         let d = dict[currentLang];
                         
-                        let displayG = currentLang === 'en' ? g : (g === 'Male' ? '男子' : '女子');
+                        let displayG = g;
+                        if (currentLang === 'ja') {
+                            displayG = g === 'Male' ? '男子' : (g === 'Female' ? '女子' : (g === 'Nonbinary' ? 'ノンバイナリー' : g));
+                        } else if (currentLang === 'zh') {
+                            displayG = g === 'Male' ? '男子' : (g === 'Female' ? '女子' : (g === 'Nonbinary' ? '非二元性別' : g));
+                        }
+                        
                         let displayN = n;
 
                         let r1 = (row['Overall_Rank_Net'] === '-' || !row['Overall_Rank_Net']) ? '-' : `${row['Overall_Rank_Net']}/${globalStats.total}`;
@@ -452,6 +514,9 @@
 
                         $('#modalBibTag').text(`${displayG} ${displayN} : Bib ${row['Bib']}`);
                         
+                        let nbGlobalStr = globalStats.nonbinary > 0 ? `, ${d.mNonbinary}${globalStats.nonbinary}${d.mPeople}` : '';
+                        let nbNatlStr = nStats.nonbinary > 0 ? `, ${d.mNonbinary}${nStats.nonbinary}${d.mPeople}` : '';
+
                         let modalHtml = `
                             <div class="cert-stats-grid mb-3">
                                 <div class="cert-stat-card">
@@ -465,8 +530,8 @@
                             </div>
 
                             <div class="text-secondary text-start mb-3 p-2 rounded" style="background-color: rgba(0,0,0,0.2); font-size: 0.75em; line-height: 1.4;">
-                                <p class="m-0">${d.mTotal}: ${globalStats.total}${d.mPeople} (${d.mFemale}${globalStats.female}${d.mPeople}, ${d.mMale}${globalStats.male}${d.mPeople})</p>
-                                <p class="m-0">${displayN}: ${nStats.total}${d.mPeople} (${d.mFemale}${nStats.female}${d.mPeople}, ${d.mMale}${nStats.male}${d.mPeople})</p>
+                                <p class="m-0">${d.mTotal}: ${globalStats.total}${d.mPeople} (${d.mFemale}${globalStats.female}${d.mPeople}, ${d.mMale}${globalStats.male}${d.mPeople}${nbGlobalStr})</p>
+                                <p class="m-0">${displayN}: ${nStats.total}${d.mPeople} (${d.mFemale}${nStats.female}${d.mPeople}, ${d.mMale}${nStats.male}${d.mPeople}${nbNatlStr})</p>
                             </div>
 
                             <div class="cert-stats-grid">
